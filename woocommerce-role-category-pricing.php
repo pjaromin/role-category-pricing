@@ -12,21 +12,30 @@
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
+if ( ! in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ) ) ) {
+    return;
+}
+
 class Role_Category_Pricing {
     const OPTION_KEY = 'rolecat_discounts';
     const NONCE_KEY  = 'rolecat_nonce';
     const VERSION    = '0.5.1';
+    private $processing = false;
 
     public function __construct() {
         register_activation_hook( __FILE__, array( $this, 'on_activate' ) );
         add_action( 'admin_menu', array( $this, 'add_settings_page' ) );
         add_action( 'admin_init', array( $this, 'handle_settings_save' ) );
 
-        add_filter( 'woocommerce_product_get_price', array( $this, 'filter_product_price' ), 9999, 2 );
-        add_filter( 'woocommerce_product_get_sale_price', array( $this, 'filter_product_sale_price' ), 9999, 2 );
-        add_filter( 'woocommerce_variation_prices', array( $this, 'filter_variation_prices' ), 9999, 3 );
-        add_filter( 'woocommerce_get_price_html', array( $this, 'filter_price_html' ), 9999, 2 );
-        add_filter( 'woocommerce_cart_item_price', array( $this, 'filter_cart_item_price_html' ), 9999, 3 );
+        add_filter( 'woocommerce_product_get_price', array( $this, 'filter_product_price' ), 999999, 2 );
+        add_filter( 'woocommerce_product_get_sale_price', array( $this, 'filter_product_sale_price' ), 999999, 2 );
+        add_filter( 'woocommerce_variation_prices', array( $this, 'filter_variation_prices' ), 999999, 3 );
+        add_filter( 'woocommerce_get_price_html', array( $this, 'filter_price_html' ), 999999, 2 );
+        add_filter( 'woocommerce_cart_item_price', array( $this, 'filter_cart_item_price_html' ), 999999, 3 );
+        
+        add_action( 'init', array( $this, 'disable_wholesale_for_role_users' ), 99 );
+        add_filter( 'wwp_show_wholesale_prices_to_non_wholesale_customers', array( $this, 'disable_wholesale_display_for_role_users' ), 10, 1 );
+
     }
 
     public function on_activate() {
@@ -233,16 +242,27 @@ class Role_Category_Pricing {
     }
 
     public function filter_product_price( $price, $product ) {
+        if ( $this->processing ) return $price;
+        $this->processing = true;
         $eff = $this->get_effective_price( $product );
+        $this->processing = false;
         return $eff['price'];
     }
 
     public function filter_product_sale_price( $sale_price, $product ) {
+        if ( $this->processing ) return $sale_price;
+        $this->processing = true;
         $pct = $this->get_user_best_discount_for_product( $product );
-        if ( $pct <= 0 ) return $sale_price;
+        if ( $pct <= 0 ) {
+            $this->processing = false;
+            return $sale_price;
+        }
 
         $reg = (float) $product->get_regular_price();
-        if ( $reg <= 0 ) return $sale_price;
+        if ( $reg <= 0 ) {
+            $this->processing = false;
+            return $sale_price;
+        }
 
         $disc_price = $reg * ( 1 - ( $pct / 100 ) );
         if ( $sale_price !== '' && $sale_price !== null ) {
@@ -250,6 +270,7 @@ class Role_Category_Pricing {
         } else {
             $sale_price = $disc_price;
         }
+        $this->processing = false;
         return wc_format_decimal( $sale_price, wc_get_price_decimals() );
     }
 
@@ -304,6 +325,54 @@ class Role_Category_Pricing {
         if ( $pct <= 0 ) return $price_html;
         return $price_html . ' <small class="rolecat-note">-' . esc_html( wc_format_decimal( $pct ) ) . '%</small>';
     }
+    
+    public function disable_wholesale_for_role_users() {
+        if ( ! is_user_logged_in() ) return;
+        
+        $user = wp_get_current_user();
+        $user_roles = (array) $user->roles;
+        $opt = $this->get_option();
+        $enabled_roles = isset( $opt['roles'] ) ? $opt['roles'] : array();
+        
+        // Check if user has any enabled role in our plugin
+        $has_enabled_role = false;
+        foreach ( $user_roles as $role ) {
+            if ( ! empty( $enabled_roles[ $role ] ) ) {
+                $has_enabled_role = true;
+                break;
+            }
+        }
+        
+        // If user has enabled role but not wholesale role, disable wholesale pricing
+        if ( $has_enabled_role && ! in_array( 'wholesale_customer', $user_roles ) && ! in_array( 'wholesale', $user_roles ) ) {
+            add_filter( 'wwp_filter_wholesale_price_html', '__return_empty_string', 999999 );
+        }
+    }
+    
+    public function disable_wholesale_display_for_role_users( $show_wholesale_prices ) {
+        if ( ! is_user_logged_in() ) return $show_wholesale_prices;
+        
+        $user = wp_get_current_user();
+        $user_roles = (array) $user->roles;
+        $opt = $this->get_option();
+        $enabled_roles = isset( $opt['roles'] ) ? $opt['roles'] : array();
+        
+        // Check if user has any enabled role in our plugin
+        foreach ( $user_roles as $role ) {
+            if ( ! empty( $enabled_roles[ $role ] ) ) {
+                return 'no'; // Disable wholesale prices display
+            }
+        }
+        
+        return $show_wholesale_prices;
+    }
+    
+
 }
 
-new Role_Category_Pricing();
+function init_role_category_pricing() {
+    if ( class_exists( 'WooCommerce' ) ) {
+        new Role_Category_Pricing();
+    }
+}
+add_action( 'plugins_loaded', 'init_role_category_pricing' );
