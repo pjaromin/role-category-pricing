@@ -1,0 +1,126 @@
+# Spanish (Spain) translation for WooCommerce Role Category Pricing
+# Copyright (C) 2024 WooCommerce Role Category Pricing
+# This file is distributed under the same license as the WooCommerce Role Category Pricing package.
+msgid ""
+msgstr ""
+"Project-Id-Version: WooCommerce Role Category Pricing 1.0.0\n"
+"Report-Msgid-Bugs-To: https://github.com/your-username/woocommerce-role-category-pricing/issues\n"
+"POT-Creation-Date: 2024-01-01 00:00+0000\n"
+"PO-Revision-Date: 2024-01-01 00:00+0000\n"
+"Last-Translator: \n"
+"Language-Team: Spanish (Spain)\n"
+"Language: es_ES\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Manual\n"
+"X-Domain: woocommerce-role-category-pricing\n"
+
+msgid "WooCommerce Role Category Pricing requires WooCommerce to be installed and active."
+msgstr "WooCommerce Role Category Pricing requiere que WooCommerce esté instalado y activo."
+
+msgid "Plugin Activation Error"
+msgstr "Error de Activación del Plugin"
+
+msgid "Role name cannot be empty."
+msgstr "El nombre del rol no puede estar vacío."
+
+msgid "A role with this name already exists."
+msgstr "Ya existe un rol con este nombre."
+
+msgid "Failed to create the role."
+msgstr "Error al crear el rol."
+
+msgid "Role key cannot be empty."
+msgstr "La clave del rol no puede estar vacía."
+
+msgid "Security check failed."
+msgstr "Falló la verificación de seguridad."
+
+msgid "Role Configuration"
+msgstr "Configuración de Roles"
+
+msgid "Configure which roles can receive discounts and set base discount percentages."
+msgstr "Configura qué roles pueden recibir descuentos y establece porcentajes de descuento base."
+
+msgid "Category Discounts"
+msgstr "Descuentos por Categoría"
+
+msgid "Set category-specific discount percentages for each enabled role."
+msgstr "Establece porcentajes de descuento específicos por categoría para cada rol habilitado."
+
+msgid "Import/Export"
+msgstr "Importar/Exportar"
+
+msgid "Backup and restore your role and discount configurations."
+msgstr "Respalda y restaura tus configuraciones de roles y descuentos."
+
+msgid "Custom Roles"
+msgstr "Roles Personalizados"
+
+msgid "New Role Name"
+msgstr "Nombre del Nuevo Rol"
+
+msgid "Add Role"
+msgstr "Agregar Rol"
+
+msgid "Role Name"
+msgstr "Nombre del Rol"
+
+msgid "Actions"
+msgstr "Acciones"
+
+msgid "Remove"
+msgstr "Eliminar"
+
+msgid "Base Discount Percentage"
+msgstr "Porcentaje de Descuento Base"
+
+msgid "Available Shipping Methods"
+msgstr "Métodos de Envío Disponibles"
+
+msgid "Save Role Configuration"
+msgstr "Guardar Configuración de Roles"
+
+msgid "Category"
+msgstr "Categoría"
+
+msgid "Save Category Discounts"
+msgstr "Guardar Descuentos por Categoría"
+
+msgid "Export Settings"
+msgstr "Exportar Configuración"
+
+msgid "Import Settings"
+msgstr "Importar Configuración"
+
+msgid "Warning:"
+msgstr "Advertencia:"
+
+msgid "Yes"
+msgstr "Sí"
+
+msgid "No"
+msgstr "No"
+
+msgid "Saving..."
+msgstr "Guardando..."
+
+msgid "Saved!"
+msgstr "¡Guardado!"
+
+msgid "Error occurred while saving."
+msgstr "Ocurrió un error al guardar."
+
+msgid "Loading..."
+msgstr "Cargando..."
+
+msgid "Success!"
+msgstr "¡Éxito!"
+
+msgid "Warning"
+msgstr "Advertencia"
+
+msgid "Information"
+msgstr "Información"

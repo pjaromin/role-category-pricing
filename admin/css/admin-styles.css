@@ -1,0 +1,445 @@
+/**
+ * Admin styles for WooCommerce Role Category Pricing plugin
+ *
+ * @package WRCP
+ * @since 1.0.0
+ */
+
+/* Main admin layout */
+.wrcp-admin-header {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.tab-content {
+    margin-top: 20px;
+}
+
+.tab-description {
+    margin-bottom: 20px;
+    padding: 10px 15px;
+    background: #fff;
+    border-left: 4px solid #0073aa;
+}
+
+/* Form tables */
+.wrcp-form-table {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+.wrcp-form-table th {
+    background: #f9f9f9;
+    border-bottom: 1px solid #ddd;
+    padding: 15px;
+    font-weight: 600;
+}
+
+.wrcp-form-table td {
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.wrcp-form-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* Role configuration */
+.wrcp-role-config {
+    margin-bottom: 20px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #fff;
+}
+
+.wrcp-role-header {
+    background: #f9f9f9;
+    padding: 15px;
+    border-bottom: 1px solid #ddd;
+    font-weight: 600;
+}
+
+.wrcp-role-header label {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    cursor: pointer;
+}
+
+.wrcp-role-header input[type="checkbox"] {
+    margin-right: 10px;
+}
+
+.wrcp-role-content {
+    padding: 15px;
+}
+
+/* Field groups */
+.wrcp-field-group {
+    margin-bottom: 15px;
+}
+
+.wrcp-field-group:last-child {
+    margin-bottom: 0;
+}
+
+.wrcp-field-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.wrcp-field-group input[type="number"],
+.wrcp-field-group input[type="text"],
+.wrcp-field-group select {
+    width: 100%;
+    max-width: 300px;
+}
+
+.wrcp-field-group .description {
+    margin-top: 5px;
+    font-style: italic;
+    color: #666;
+}
+
+/* Checkbox groups */
+.wrcp-checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 5px;
+}
+
+.wrcp-checkbox-group label {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0;
+    font-weight: normal;
+    white-space: nowrap;
+}
+
+.wrcp-checkbox-group input[type="checkbox"] {
+    margin-right: 5px;
+}
+
+/* Custom roles section */
+.wrcp-custom-roles-section {
+    margin-bottom: 30px;
+    padding: 20px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.wrcp-add-role-form {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f9f9f9;
+    border-radius: 4px;
+}
+
+.wrcp-custom-roles-list {
+    margin-top: 20px;
+}
+
+/* Category discounts */
+.wrcp-category-discounts-table {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.wrcp-category-discounts-table table {
+    margin: 0;
+}
+
+.wrcp-category-name {
+    font-weight: 500;
+}
+
+.wrcp-category-name.level-1 { padding-left: 20px; }
+.wrcp-category-name.level-2 { padding-left: 40px; }
+.wrcp-category-name.level-3 { padding-left: 60px; }
+.wrcp-category-name.level-4 { padding-left: 80px; }
+
+.wrcp-category-name small {
+    color: #666;
+    font-weight: normal;
+}
+
+.wrcp-category-discount {
+    width: 80px;
+    text-align: center;
+}
+
+/* Bulk actions */
+.wrcp-bulk-actions {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.wrcp-bulk-actions h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.wrcp-bulk-actions .button {
+    margin-right: 10px;
+}
+
+/* Category help */
+.wrcp-category-help {
+    margin-top: 20px;
+    padding: 15px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.wrcp-category-help h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.wrcp-category-help ul {
+    margin-bottom: 0;
+}
+
+.wrcp-category-help li {
+    margin-bottom: 5px;
+}
+
+/* Import/Export sections */
+.wrcp-import-export-sections {
+    display: grid;
+    gap: 20px;
+}
+
+.wrcp-import-export-section {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 20px;
+}
+
+.wrcp-import-export-section h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+
+.wrcp-file-input {
+    margin-bottom: 10px;
+}
+
+/* Notices */
+.wrcp-notice {
+    padding: 10px 15px;
+    margin-bottom: 15px;
+    border-radius: 4px;
+}
+
+.wrcp-notice.notice-info {
+    background: #e7f3ff;
+    border-left: 4px solid #0073aa;
+}
+
+.wrcp-notice.notice-warning {
+    background: #fff8e5;
+    border-left: 4px solid #ffb900;
+}
+
+.wrcp-notice.notice-error {
+    background: #ffeaea;
+    border-left: 4px solid #d63638;
+}
+
+.wrcp-notice.notice-success {
+    background: #edfaef;
+    border-left: 4px solid #00a32a;
+}
+
+/* Loading states */
+.wrcp-loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.wrcp-spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    margin-left: 5px;
+    background: url('../../../wp-admin/images/spinner.gif') no-repeat;
+    background-size: 16px 16px;
+}
+
+/* Button styles */
+.button.button-link-delete {
+    color: #d63638;
+    text-decoration: none;
+}
+
+.button.button-link-delete:hover {
+    color: #d63638;
+    text-decoration: underline;
+}
+
+/* Table improvements */
+.wp-list-table th,
+.wp-list-table td {
+    vertical-align: middle;
+}
+
+.wp-list-table .column-actions {
+    text-align: right;
+}
+
+/* Form improvements */
+.wrcp-role-config-form .submit,
+.wrcp-category-discounts-form .submit {
+    background: #f9f9f9;
+    padding: 15px;
+    margin: 0;
+    border-top: 1px solid #ddd;
+}
+
+/* Responsive design */
+@media (max-width: 782px) {
+    .wrcp-checkbox-group {
+        flex-direction: column;
+    }
+    
+    .wrcp-field-group input[type="number"],
+    .wrcp-field-group input[type="text"],
+    .wrcp-field-group select {
+        max-width: 100%;
+    }
+    
+    .wrcp-bulk-actions > div {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .wrcp-bulk-actions select,
+    .wrcp-bulk-actions input,
+    .wrcp-bulk-actions button {
+        margin-bottom: 10px;
+        margin-right: 0;
+    }
+    
+    .wrcp-category-discounts-table {
+        overflow-x: auto;
+    }
+    
+    .wrcp-category-discount {
+        width: 60px;
+    }
+    
+    .wrcp-import-export-sections {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .wrcp-role-header {
+        padding: 10px;
+    }
+    
+    .wrcp-role-content {
+        padding: 10px;
+    }
+    
+    .wrcp-import-export-section {
+        padding: 15px;
+    }
+    
+    .wrcp-bulk-actions {
+        padding: 10px;
+    }
+}
+
+/* WordPress admin color scheme compatibility */
+.admin-color-fresh .wrcp-notice.notice-info {
+    border-left-color: #0073aa;
+}
+
+.admin-color-light .wrcp-notice.notice-info {
+    border-left-color: #0085ba;
+}
+
+.admin-color-blue .wrcp-notice.notice-info {
+    border-left-color: #096484;
+}
+
+.admin-color-coffee .wrcp-notice.notice-info {
+    border-left-color: #46403c;
+}
+
+.admin-color-ectoplasm .wrcp-notice.notice-info {
+    border-left-color: #523f6d;
+}
+
+.admin-color-midnight .wrcp-notice.notice-info {
+    border-left-color: #e14d43;
+}
+
+.admin-color-ocean .wrcp-notice.notice-info {
+    border-left-color: #627c83;
+}
+
+.admin-color-sunrise .wrcp-notice.notice-info {
+    border-left-color: #dd823b;
+}
+
+/* Focus styles for accessibility */
+.wrcp-role-header input[type="checkbox"]:focus,
+.wrcp-field-group input:focus,
+.wrcp-field-group select:focus,
+.wrcp-category-discount:focus {
+    box-shadow: 0 0 0 2px #0073aa;
+    outline: none;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .wrcp-role-config,
+    .wrcp-import-export-section,
+    .wrcp-form-table {
+        border-width: 2px;
+    }
+    
+    .wrcp-notice {
+        border-left-width: 6px;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .wrcp-role-content {
+        transition: none;
+    }
+}
+
+/* Print styles */
+@media print {
+    .wrcp-bulk-actions,
+    .submit,
+    .button {
+        display: none;
+    }
+    
+    .wrcp-import-export-section,
+    .wrcp-role-config {
+        border: 1px solid #000;
+        break-inside: avoid;
+    }
+}

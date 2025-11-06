@@ -1,0 +1,165 @@
+/**
+ * RTL styles for WooCommerce Role Category Pricing admin interface
+ *
+ * @package WRCP
+ * @since 1.0.0
+ */
+
+/* RTL adjustments for admin interface */
+.rtl .wrcp-admin-header {
+    text-align: right;
+}
+
+.rtl .wrcp-field-group label {
+    text-align: right;
+}
+
+.rtl .wrcp-checkbox-group {
+    direction: rtl;
+}
+
+.rtl .wrcp-checkbox-group label {
+    margin-left: 0;
+    margin-right: 10px;
+}
+
+.rtl .wrcp-checkbox-group input[type="checkbox"] {
+    margin-left: 5px;
+    margin-right: 0;
+}
+
+.rtl .wrcp-category-name {
+    text-align: right;
+    padding-right: 0;
+}
+
+.rtl .wrcp-category-name.level-1 { 
+    padding-right: 20px; 
+    padding-left: 0;
+}
+
+.rtl .wrcp-category-name.level-2 { 
+    padding-right: 40px; 
+    padding-left: 0;
+}
+
+.rtl .wrcp-category-name.level-3 { 
+    padding-right: 60px; 
+    padding-left: 0;
+}
+
+.rtl .wrcp-category-name.level-4 { 
+    padding-right: 80px; 
+    padding-left: 0;
+}
+
+.rtl .wrcp-category-discount {
+    margin-right: 10px;
+    margin-left: 0;
+}
+
+.rtl .wrcp-bulk-actions .button {
+    margin-left: 10px;
+    margin-right: 0;
+}
+
+.rtl .wrcp-role-header label {
+    text-align: right;
+}
+
+.rtl .wrcp-role-header small {
+    margin-right: 5px;
+    margin-left: 0;
+}
+
+.rtl .wrcp-spinner {
+    margin-right: 5px;
+    margin-left: 0;
+}
+
+/* Form field adjustments for RTL */
+.rtl .wrcp-field-group input[type="number"],
+.rtl .wrcp-field-group input[type="text"],
+.rtl .wrcp-field-group select {
+    text-align: right;
+}
+
+/* Table adjustments for RTL */
+.rtl .wrcp-form-table th,
+.rtl .wrcp-form-table td {
+    text-align: right;
+}
+
+.rtl .wp-list-table th,
+.rtl .wp-list-table td {
+    text-align: right;
+}
+
+/* Navigation tabs RTL */
+.rtl .nav-tab-wrapper {
+    direction: rtl;
+}
+
+.rtl .nav-tab {
+    margin-left: 0;
+    margin-right: 5px;
+}
+
+/* Import/Export section RTL */
+.rtl .wrcp-import-export-section {
+    text-align: right;
+}
+
+.rtl .wrcp-file-input {
+    text-align: right;
+}
+
+/* Notice adjustments for RTL */
+.rtl .wrcp-notice {
+    text-align: right;
+}
+
+.rtl .wrcp-notice.notice-info {
+    border-right: 4px solid #0073aa;
+    border-left: none;
+}
+
+.rtl .wrcp-notice.notice-warning {
+    border-right: 4px solid #ffb900;
+    border-left: none;
+}
+
+/* Tab description RTL */
+.rtl .tab-description {
+    text-align: right;
+    border-right: 4px solid #0073aa;
+    border-left: none;
+}
+
+/* Button spacing adjustments */
+.rtl .button + .button {
+    margin-left: 0;
+    margin-right: 10px;
+}
+
+/* Responsive RTL adjustments */
+@media (max-width: 782px) {
+    .rtl .wrcp-category-item {
+        text-align: right;
+    }
+    
+    .rtl .wrcp-category-discount {
+        margin-right: 0;
+        margin-left: 0;
+    }
+    
+    .rtl .wrcp-bulk-actions {
+        text-align: right;
+    }
+    
+    .rtl .wrcp-bulk-actions .button {
+        margin-left: 0;
+        margin-right: 0;
+        margin-bottom: 5px;
+    }
+}

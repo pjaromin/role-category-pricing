@@ -1,0 +1,128 @@
+/**
+ * Frontend styles for WooCommerce Role Category Pricing plugin
+ *
+ * @package WRCP
+ * @since 1.0.0
+ */
+
+/* WRCP Price Container */
+.wrcp-price-container {
+    display: inline-block;
+    line-height: 1.4;
+}
+
+/* Original Price (crossed out) */
+.wrcp-original-price {
+    color: #999;
+    text-decoration: line-through;
+    font-size: 0.9em;
+    margin-right: 0.5em;
+}
+
+/* Discounted Price */
+.wrcp-discounted-price {
+    color: #e74c3c;
+    font-weight: bold;
+    text-decoration: none;
+    background: none;
+    padding: 0;
+}
+
+/* Role Label */
+.wrcp-role-label {
+    color: #666;
+    font-size: 0.8em;
+    font-style: italic;
+    display: block;
+    margin-top: 2px;
+}
+
+/* Savings Information */
+.wrcp-savings-info {
+    color: #27ae60;
+    font-size: 0.75em;
+    font-weight: normal;
+    display: block;
+    margin-top: 1px;
+}
+
+/* Variable Product Specific Styles */
+.wrcp-variable-price .wrcp-role-label {
+    margin-top: 4px;
+}
+
+/* Variation Price Specific Styles */
+.wrcp-variation-price {
+    transition: all 0.3s ease;
+}
+
+.wrcp-variation-price .wrcp-discounted-price {
+    font-size: 1.1em;
+}
+
+/* Price update animations */
+.wrcp-price-container {
+    transition: opacity 0.2s ease;
+}
+
+.wrcp-price-updating {
+    opacity: 0.6;
+}
+
+/* Shop Page Adjustments */
+.woocommerce ul.products li.product .price .wrcp-price-container {
+    display: block;
+    text-align: center;
+}
+
+/* Single Product Page Adjustments */
+.single-product .summary .price .wrcp-price-container {
+    display: block;
+}
+
+.single-product .summary .price .wrcp-discounted-price {
+    font-size: 1.1em;
+}
+
+/* Cart and Checkout Compatibility */
+.woocommerce-cart .wrcp-role-label,
+.woocommerce-checkout .wrcp-role-label {
+    display: none;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .wrcp-price-container {
+        font-size: 0.9em;
+    }
+    
+    .wrcp-role-label {
+        font-size: 0.75em;
+    }
+}
+
+/* Theme Compatibility - Common Overrides */
+.woocommerce .wrcp-price-container ins,
+.woocommerce .wrcp-price-container del {
+    background: none;
+    text-decoration: inherit;
+}
+
+.woocommerce .wrcp-discounted-price {
+    background: none !important;
+    color: #e74c3c !important;
+}
+
+/* Ensure proper spacing in price displays */
+.price .wrcp-price-container br {
+    line-height: 1.2;
+}
+
+/* Widget compatibility */
+.widget .wrcp-price-container {
+    font-size: 0.85em;
+}
+
+.widget .wrcp-role-label {
+    font-size: 0.7em;
+}
