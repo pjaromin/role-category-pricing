@@ -767,48 +767,30 @@ class WRCP_WWP_Compatibility {
         }
         
         $current_user_id = get_current_user_id();
+        $user = get_user_by('id', $current_user_id);
         
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('WRCP Compatibility: Checking should_wrcp_run for user ' . $current_user_id);
+        if (!$user) {
+            return false;
         }
         
-        // Check if user is true wholesale customer
-        if ($this->bootstrap->is_wwp_active()) {
-            $wholesale_role = $this->bootstrap->get_user_wwp_wholesale_role($current_user_id);
-            
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('WRCP Compatibility: WWP detected role: ' . ($wholesale_role ? $wholesale_role : 'none'));
-            }
-            
-            if ($wholesale_role) {
-                // Only bypass WRCP for actual wholesale roles, not custom roles like "Educator"
-                $true_wholesale_roles = array(
-                    'wholesale_customer',
-                    'wwp_wholesale_customer',
-                    'dealer', // Only if this is truly a wholesale role
-                );
-                
-                // Allow filtering of which roles should bypass WRCP
-                $true_wholesale_roles = apply_filters('wrcp_true_wholesale_roles', $true_wholesale_roles);
-                
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('WRCP Compatibility: True wholesale roles: ' . implode(', ', $true_wholesale_roles));
-                    error_log('WRCP Compatibility: Is ' . $wholesale_role . ' in true wholesale roles? ' . (in_array($wholesale_role, $true_wholesale_roles) ? 'yes' : 'no'));
-                }
-                
-                if (in_array($wholesale_role, $true_wholesale_roles)) {
-                    if (defined('WP_DEBUG') && WP_DEBUG) {
-                        error_log('WRCP Compatibility: Bypassing WRCP for true wholesale role: ' . $wholesale_role);
-                    }
-                    return false; // Don't run WRCP for true wholesale customers only
-                }
+        // Simple approach: Only bypass WRCP for users with specific wholesale roles
+        $user_roles = $user->roles;
+        $true_wholesale_roles = array(
+            'wholesale_customer',
+            'wwp_wholesale_customer'
+        );
+        
+        // Allow filtering of which roles should bypass WRCP
+        $true_wholesale_roles = apply_filters('wrcp_true_wholesale_roles', $true_wholesale_roles);
+        
+        // Check if user has any true wholesale roles
+        foreach ($user_roles as $role) {
+            if (in_array($role, $true_wholesale_roles)) {
+                return false; // Don't run WRCP for true wholesale customers
             }
         }
         
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('WRCP Compatibility: WRCP should run - returning true');
-        }
-        
+        // For all other roles (including "educator"), WRCP should run
         return true;
     }
     

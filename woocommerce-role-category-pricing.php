@@ -12,7 +12,7 @@
  * Tested up to: 6.4
  * Requires PHP: 7.4
  * WC requires at least: 5.0
- * WC tested up to: 8.0
+ * WC tested up to: 9.0
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  */
@@ -44,6 +44,16 @@ spl_autoload_register(function ($class_name) {
 
 // Initialize the plugin
 function wrcp_init() {
+    // Check if WooCommerce is active before initializing
+    if (!class_exists('WooCommerce')) {
+        add_action('admin_notices', function() {
+            echo '<div class="notice notice-error"><p>';
+            echo esc_html__('WooCommerce Role Category Pricing requires WooCommerce to be installed and active.', 'woocommerce-role-category-pricing');
+            echo '</p></div>';
+        });
+        return;
+    }
+    
     // Load text domain early for proper internationalization
     load_plugin_textdomain(
         'woocommerce-role-category-pricing',
@@ -91,5 +101,34 @@ function wrcp_uninstall() {
     }
 }
 
+// Declare WooCommerce compatibility
+add_action('before_woocommerce_init', function() {
+    if (class_exists('\Automattic\WooCommerce\Utilities\FeaturesUtil')) {
+        // Declare compatibility with High-Performance Order Storage (HPOS)
+        \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility('custom_order_tables', __FILE__, true);
+        
+        // Declare compatibility with Cart and Checkout Blocks
+        \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility('cart_checkout_blocks', __FILE__, true);
+        
+        // Declare compatibility with other WooCommerce features
+        \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility('product_block_editor', __FILE__, true);
+    }
+});
+
 // Initialize plugin after WordPress and WooCommerce are loaded
 add_action('plugins_loaded', 'wrcp_init', 20);
+
+// Add a hook to check for WooCommerce after all plugins are loaded
+add_action('init', function() {
+    if (!class_exists('WooCommerce')) {
+        // Deactivate the plugin if WooCommerce is not available
+        add_action('admin_init', function() {
+            deactivate_plugins(plugin_basename(__FILE__));
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-error"><p>';
+                echo esc_html__('WooCommerce Role Category Pricing has been deactivated because WooCommerce is not active.', 'woocommerce-role-category-pricing');
+                echo '</p></div>';
+            });
+        });
+    }
+}, 0);

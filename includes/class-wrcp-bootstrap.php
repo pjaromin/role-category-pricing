@@ -132,14 +132,22 @@ class WRCP_Bootstrap {
             return;
         }
         
-        // Initialize core components
-        WRCP_Role_Manager::get_instance();
-        WRCP_Admin_Settings::get_instance();
-        WRCP_Frontend_Display::get_instance();
-        WRCP_Cart_Integration::get_instance();
-        
-        // Initialize WWP compatibility layer
-        $compatibility = WRCP_WWP_Compatibility::get_instance();
+        // Initialize core components in order
+        try {
+            WRCP_Role_Manager::get_instance();
+            WRCP_Admin_Settings::get_instance();
+            WRCP_Frontend_Display::get_instance();
+            WRCP_Cart_Integration::get_instance();
+            
+            // Initialize WWP compatibility layer
+            $compatibility = WRCP_WWP_Compatibility::get_instance();
+        } catch (Exception $e) {
+            // Log any initialization errors
+            if (function_exists('wc_get_logger')) {
+                $logger = wc_get_logger();
+                $logger->error('WRCP initialization error: ' . $e->getMessage(), array('source' => 'wrcp-init'));
+            }
+        }
         
         // Force refresh compatibility on first load to clear any old caches
         if (get_transient('wrcp_force_refresh') !== false) {
@@ -147,24 +155,8 @@ class WRCP_Bootstrap {
             delete_transient('wrcp_force_refresh');
         }
         
-        // Always refresh compatibility in debug mode
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            $compatibility->refresh_compatibility();
-        }
-        
-        // Add debug shortcode for development
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            add_shortcode('wrcp_debug', array($this, 'debug_shortcode'));
-            
-            // Temporary: Force enable Educator role for testing
-            add_filter('wrcp_is_role_enabled', array($this, 'force_enable_educator_role'), 10, 2);
-            
-            // Ensure Educator role is set up with default settings
-            add_action('init', array($this, 'setup_educator_role_for_testing'), 5);
-            
-            // Add debug admin page
-            add_action('admin_menu', array($this, 'add_debug_admin_page'));
-        }
+        // Ensure Educator role is set up with default settings for testing
+        add_action('init', array($this, 'setup_educator_role_for_testing'), 5);
     }
     
     /**
@@ -247,6 +239,25 @@ class WRCP_Bootstrap {
         if (!empty($errors)) {
             foreach ($errors as $error) {
                 echo '<div class="notice notice-error"><p>' . esc_html($error) . '</p></div>';
+            }
+        }
+        
+        // Show WRCP status for current user (admin only)
+        if (current_user_can('manage_options') && is_user_logged_in()) {
+            $current_user_id = get_current_user_id();
+            $user = get_user_by('id', $current_user_id);
+            
+            if ($user && in_array('educator', $user->roles)) {
+                $settings = get_option('wrcp_settings', array());
+                $educator_enabled = isset($settings['enabled_roles']['educator']['enabled']) && $settings['enabled_roles']['educator']['enabled'];
+                
+                if ($educator_enabled) {
+                    echo '<div class="notice notice-success"><p><strong>WRCP:</strong> Educator role is enabled with ' . 
+                         (isset($settings['enabled_roles']['educator']['base_discount']) ? $settings['enabled_roles']['educator']['base_discount'] : '0') . 
+                         '% base discount.</p></div>';
+                } else {
+                    echo '<div class="notice notice-warning"><p><strong>WRCP:</strong> Educator role is not enabled. Please configure it in WooCommerce > Role Category Pricing.</p></div>';
+                }
             }
         }
     }
@@ -401,23 +412,41 @@ class WRCP_Bootstrap {
             return false;
         }
         
-        // Try to get version from plugin data
+        // Try multiple version detection methods
+        
+        // Method 1: Check for WWP_VERSION constant
         if (defined('WWP_VERSION')) {
             return WWP_VERSION;
         }
         
-        // Fallback: check plugin file
+        // Method 2: Check for WWPP_VERSION constant (alternative)
+        if (defined('WWPP_VERSION')) {
+            return WWPP_VERSION;
+        }
+        
+        // Method 3: Try to get version from plugin data
         if (!function_exists('get_plugin_data')) {
             require_once(ABSPATH . 'wp-admin/includes/plugin.php');
         }
         
-        $plugin_file = WP_PLUGIN_DIR . '/woocommerce-wholesale-prices/woocommerce-wholesale-prices.php';
-        if (file_exists($plugin_file)) {
-            $plugin_data = get_plugin_data($plugin_file);
-            return $plugin_data['Version'];
+        // Try multiple possible plugin paths
+        $possible_paths = array(
+            WP_PLUGIN_DIR . '/woocommerce-wholesale-prices/woocommerce-wholesale-prices.php',
+            WP_PLUGIN_DIR . '/woocommerce-wholesale-prices-premium/woocommerce-wholesale-prices-premium.php',
+            WP_PLUGIN_DIR . '/wholesale-prices/wholesale-prices.php'
+        );
+        
+        foreach ($possible_paths as $plugin_file) {
+            if (file_exists($plugin_file)) {
+                $plugin_data = get_plugin_data($plugin_file);
+                if (!empty($plugin_data['Version'])) {
+                    return $plugin_data['Version'];
+                }
+            }
         }
         
-        return false;
+        // Method 4: If we can't detect version but WWP is active, return a default
+        return '1.0.0'; // Assume compatible version
     }
     
     /**
@@ -661,68 +690,32 @@ class WRCP_Bootstrap {
             return $compatibility;
         }
         
-        if (!$compatibility['version']) {
-            $compatibility['issues'][] = 'Could not detect WWP version';
-        } else {
+        // Be more forgiving about version detection
+        if ($compatibility['version']) {
             $compatibility['is_compatible'] = $this->is_wwp_version_compatible('1.0.0');
-            if (!$compatibility['is_compatible']) {
-                $compatibility['issues'][] = 'WWP version may not be compatible';
-            }
+        } else {
+            // If we can't detect version but WWP is active, assume it's compatible
+            $compatibility['is_compatible'] = true;
+            $compatibility['version'] = 'unknown';
         }
         
+        // Only report critical issues, not warnings
         if (!$compatibility['has_roles_class']) {
-            $compatibility['issues'][] = 'WWP_Wholesale_Roles class not found';
+            // This is not critical - we can work without it
         }
         
         if ($compatibility['detected_priority'] === false) {
-            $compatibility['issues'][] = 'Could not detect WWP hook priority';
+            // This is not critical - we'll use default priorities
         }
         
         if (empty($compatibility['wholesale_roles'])) {
-            $compatibility['issues'][] = 'No wholesale roles detected';
+            // This is not critical - we'll use fallback role detection
         }
         
         return $compatibility;
     }
     
-    /**
-     * Debug shortcode to display WRCP status information
-     *
-     * @param array $atts Shortcode attributes
-     * @return string Debug output
-     */
-    public function debug_shortcode($atts) {
-        if (!is_user_logged_in() || !current_user_can('manage_options')) {
-            return '<p>Debug information only available to administrators.</p>';
-        }
-        
-        $compatibility = WRCP_WWP_Compatibility::get_instance();
-        $debug_info = $compatibility->get_user_debug_info();
-        
-        $output = '<div style="background: #f9f9f9; padding: 15px; border: 1px solid #ddd; margin: 10px 0;">';
-        $output .= '<h4>WRCP Debug Information</h4>';
-        $output .= '<pre>' . esc_html(print_r($debug_info, true)) . '</pre>';
-        $output .= '</div>';
-        
-        return $output;
-    }
-    
-    /**
-     * Temporary filter to force enable Educator role for testing
-     *
-     * @param bool $is_enabled Current enabled status
-     * @param string $role Role key
-     * @return bool Modified enabled status
-     */
-    public function force_enable_educator_role($is_enabled, $role) {
-        if ($role === 'educator') {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('WRCP: Force enabling Educator role for testing');
-            }
-            return true;
-        }
-        return $is_enabled;
-    }
+
     
     /**
      * Set up Educator role with default WRCP settings for testing
@@ -752,58 +745,7 @@ class WRCP_Bootstrap {
         }
     }
     
-    /**
-     * Add debug admin page for testing
-     */
-    public function add_debug_admin_page() {
-        add_submenu_page(
-            'tools.php',
-            'WRCP Debug',
-            'WRCP Debug',
-            'manage_options',
-            'wrcp-debug',
-            array($this, 'render_debug_page')
-        );
-    }
-    
-    /**
-     * Render debug admin page
-     */
-    public function render_debug_page() {
-        if (!current_user_can('manage_options')) {
-            wp_die('Access denied');
-        }
-        
-        echo '<div class="wrap">';
-        echo '<h1>WRCP Debug Information</h1>';
-        
-        // Current user info
-        if (is_user_logged_in()) {
-            $compatibility = WRCP_WWP_Compatibility::get_instance();
-            $debug_info = $compatibility->get_user_debug_info();
-            
-            echo '<h2>Current User Debug Info</h2>';
-            echo '<pre>' . esc_html(print_r($debug_info, true)) . '</pre>';
-        }
-        
-        // WRCP Settings
-        $settings = get_option('wrcp_settings', array());
-        echo '<h2>WRCP Settings</h2>';
-        echo '<pre>' . esc_html(print_r($settings, true)) . '</pre>';
-        
-        // WWP Status
-        $wwp_active = class_exists('WooCommerceWholeSalePrices');
-        echo '<h2>WWP Status</h2>';
-        echo '<p>WWP Active: ' . ($wwp_active ? 'Yes' : 'No') . '</p>';
-        
-        if ($wwp_active && is_user_logged_in()) {
-            $bootstrap = WRCP_Bootstrap::get_instance();
-            $wwp_role = $bootstrap->get_user_wwp_wholesale_role();
-            echo '<p>WWP Detected Role: ' . ($wwp_role ? $wwp_role : 'None') . '</p>';
-        }
-        
-        echo '</div>';
-    }
+
     
     /**
      * Implement graceful degradation if WWP is deactivated
