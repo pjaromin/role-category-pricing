@@ -139,7 +139,32 @@ class WRCP_Bootstrap {
         WRCP_Cart_Integration::get_instance();
         
         // Initialize WWP compatibility layer
-        WRCP_WWP_Compatibility::get_instance();
+        $compatibility = WRCP_WWP_Compatibility::get_instance();
+        
+        // Force refresh compatibility on first load to clear any old caches
+        if (get_transient('wrcp_force_refresh') !== false) {
+            $compatibility->refresh_compatibility();
+            delete_transient('wrcp_force_refresh');
+        }
+        
+        // Always refresh compatibility in debug mode
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            $compatibility->refresh_compatibility();
+        }
+        
+        // Add debug shortcode for development
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            add_shortcode('wrcp_debug', array($this, 'debug_shortcode'));
+            
+            // Temporary: Force enable Educator role for testing
+            add_filter('wrcp_is_role_enabled', array($this, 'force_enable_educator_role'), 10, 2);
+            
+            // Ensure Educator role is set up with default settings
+            add_action('init', array($this, 'setup_educator_role_for_testing'), 5);
+            
+            // Add debug admin page
+            add_action('admin_menu', array($this, 'add_debug_admin_page'));
+        }
     }
     
     /**
@@ -658,6 +683,126 @@ class WRCP_Bootstrap {
         }
         
         return $compatibility;
+    }
+    
+    /**
+     * Debug shortcode to display WRCP status information
+     *
+     * @param array $atts Shortcode attributes
+     * @return string Debug output
+     */
+    public function debug_shortcode($atts) {
+        if (!is_user_logged_in() || !current_user_can('manage_options')) {
+            return '<p>Debug information only available to administrators.</p>';
+        }
+        
+        $compatibility = WRCP_WWP_Compatibility::get_instance();
+        $debug_info = $compatibility->get_user_debug_info();
+        
+        $output = '<div style="background: #f9f9f9; padding: 15px; border: 1px solid #ddd; margin: 10px 0;">';
+        $output .= '<h4>WRCP Debug Information</h4>';
+        $output .= '<pre>' . esc_html(print_r($debug_info, true)) . '</pre>';
+        $output .= '</div>';
+        
+        return $output;
+    }
+    
+    /**
+     * Temporary filter to force enable Educator role for testing
+     *
+     * @param bool $is_enabled Current enabled status
+     * @param string $role Role key
+     * @return bool Modified enabled status
+     */
+    public function force_enable_educator_role($is_enabled, $role) {
+        if ($role === 'educator') {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('WRCP: Force enabling Educator role for testing');
+            }
+            return true;
+        }
+        return $is_enabled;
+    }
+    
+    /**
+     * Set up Educator role with default WRCP settings for testing
+     */
+    public function setup_educator_role_for_testing() {
+        $settings = get_option('wrcp_settings', array());
+        
+        // Ensure enabled_roles array exists
+        if (!isset($settings['enabled_roles'])) {
+            $settings['enabled_roles'] = array();
+        }
+        
+        // Set up Educator role if not already configured
+        if (!isset($settings['enabled_roles']['educator'])) {
+            $settings['enabled_roles']['educator'] = array(
+                'enabled' => true,
+                'base_discount' => 10.0, // 10% base discount for testing
+                'shipping_methods' => array(),
+                'category_discounts' => array()
+            );
+            
+            update_option('wrcp_settings', $settings);
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('WRCP: Set up Educator role with 10% base discount for testing');
+            }
+        }
+    }
+    
+    /**
+     * Add debug admin page for testing
+     */
+    public function add_debug_admin_page() {
+        add_submenu_page(
+            'tools.php',
+            'WRCP Debug',
+            'WRCP Debug',
+            'manage_options',
+            'wrcp-debug',
+            array($this, 'render_debug_page')
+        );
+    }
+    
+    /**
+     * Render debug admin page
+     */
+    public function render_debug_page() {
+        if (!current_user_can('manage_options')) {
+            wp_die('Access denied');
+        }
+        
+        echo '<div class="wrap">';
+        echo '<h1>WRCP Debug Information</h1>';
+        
+        // Current user info
+        if (is_user_logged_in()) {
+            $compatibility = WRCP_WWP_Compatibility::get_instance();
+            $debug_info = $compatibility->get_user_debug_info();
+            
+            echo '<h2>Current User Debug Info</h2>';
+            echo '<pre>' . esc_html(print_r($debug_info, true)) . '</pre>';
+        }
+        
+        // WRCP Settings
+        $settings = get_option('wrcp_settings', array());
+        echo '<h2>WRCP Settings</h2>';
+        echo '<pre>' . esc_html(print_r($settings, true)) . '</pre>';
+        
+        // WWP Status
+        $wwp_active = class_exists('WooCommerceWholeSalePrices');
+        echo '<h2>WWP Status</h2>';
+        echo '<p>WWP Active: ' . ($wwp_active ? 'Yes' : 'No') . '</p>';
+        
+        if ($wwp_active && is_user_logged_in()) {
+            $bootstrap = WRCP_Bootstrap::get_instance();
+            $wwp_role = $bootstrap->get_user_wwp_wholesale_role();
+            echo '<p>WWP Detected Role: ' . ($wwp_role ? $wwp_role : 'None') . '</p>';
+        }
+        
+        echo '</div>';
     }
     
     /**

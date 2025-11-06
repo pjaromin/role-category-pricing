@@ -174,8 +174,11 @@ class WRCP_Role_Manager {
         
         $settings = get_option('wrcp_settings', array());
         
-        return isset($settings['enabled_roles'][$role]['enabled']) && 
-               $settings['enabled_roles'][$role]['enabled'] === true;
+        $is_enabled = isset($settings['enabled_roles'][$role]['enabled']) && 
+                     $settings['enabled_roles'][$role]['enabled'] === true;
+        
+        // Allow filtering of role enabled status
+        return apply_filters('wrcp_is_role_enabled', $is_enabled, $role);
     }
     
     /**
@@ -341,7 +344,19 @@ class WRCP_Role_Manager {
         if ($this->bootstrap->is_wwp_active()) {
             $wwp_wholesale_role = $this->bootstrap->get_user_wwp_wholesale_role($user_id);
             if ($wwp_wholesale_role) {
-                $is_wholesale = true;
+                // Only consider true wholesale roles, not custom roles like "Educator"
+                $true_wholesale_roles = array(
+                    'wholesale_customer',
+                    'wwp_wholesale_customer',
+                    'dealer', // Only if this is truly a wholesale role
+                );
+                
+                // Allow filtering of which roles should be considered wholesale
+                $true_wholesale_roles = apply_filters('wrcp_true_wholesale_roles', $true_wholesale_roles);
+                
+                if (in_array($wwp_wholesale_role, $true_wholesale_roles)) {
+                    $is_wholesale = true;
+                }
             }
         }
         
@@ -351,7 +366,17 @@ class WRCP_Role_Manager {
             if ($user) {
                 $user_roles = $user->roles;
                 
-                foreach ($this->wholesale_roles as $wholesale_role) {
+                // Use the same true wholesale roles list for consistency
+                $true_wholesale_roles = array(
+                    'wholesale_customer',
+                    'wwp_wholesale_customer',
+                    'dealer', // Only if this is truly a wholesale role
+                );
+                
+                // Allow filtering of which roles should be considered wholesale
+                $true_wholesale_roles = apply_filters('wrcp_true_wholesale_roles', $true_wholesale_roles);
+                
+                foreach ($true_wholesale_roles as $wholesale_role) {
                     if (in_array($wholesale_role, $user_roles)) {
                         $is_wholesale = true;
                         break;
@@ -364,6 +389,21 @@ class WRCP_Role_Manager {
         wp_cache_set($cache_key, $is_wholesale ? 'yes' : 'no', 'wrcp', 300);
         
         return $is_wholesale;
+    }
+    
+    /**
+     * Clear wholesale customer cache for a user
+     *
+     * @param int $user_id User ID
+     */
+    public function clear_wholesale_cache($user_id = null) {
+        if ($user_id) {
+            $cache_key = 'wrcp_is_wholesale_' . $user_id;
+            wp_cache_delete($cache_key, 'wrcp');
+        } else {
+            // Clear all wholesale caches
+            wp_cache_flush_group('wrcp');
+        }
     }
     
     /**

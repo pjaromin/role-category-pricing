@@ -27,7 +27,7 @@ class WRCP_Pricing_Engine {
      * Constructor
      */
     public function __construct() {
-        $this->role_manager = new WRCP_Role_Manager();
+        $this->role_manager = WRCP_Role_Manager::get_instance();
     }
 
     /**

@@ -78,6 +78,9 @@ class WRCP_Frontend_Display {
         // Hook for variation price display
         add_filter('woocommerce_variation_price_html', array($this, 'modify_variation_price_html'), $hook_priority, 2);
         
+        // Add a very late hook to override WWP pricing for non-wholesale roles
+        add_filter('woocommerce_get_price_html', array($this, 'override_wwp_pricing'), 999, 2);
+        
         // Hook for variation data to include WRCP pricing
         add_filter('woocommerce_available_variation', array($this, 'add_variation_price_data'), 10, 3);
         
@@ -104,7 +107,17 @@ class WRCP_Frontend_Display {
         $bootstrap->handle_wwp_deactivation();
         
         if ($bootstrap->is_wwp_active()) {
-            return $bootstrap->get_wrcp_hook_priority();
+            // Use a much higher priority to ensure WRCP runs after WWP
+            $priority = $bootstrap->get_wrcp_hook_priority();
+            
+            // Force a minimum priority of 50 to ensure we run after WWP
+            $priority = max($priority, 50);
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('WRCP: Using hook priority ' . $priority . ' for WWP compatibility');
+            }
+            
+            return $priority;
         }
         
         // Default priority if WWP is not active
@@ -124,15 +137,30 @@ class WRCP_Frontend_Display {
             return $price_html;
         }
         
+        // Debug logging if WP_DEBUG is enabled
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('WRCP: modify_price_html called for product ' . $product->get_id());
+        }
+        
         // Skip if user doesn't qualify for WRCP pricing
         if (!$this->should_modify_pricing()) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('WRCP: should_modify_pricing returned false');
+            }
             return $price_html;
         }
         
         // Get current user's applicable roles
         $user_roles = $this->get_current_user_applicable_roles();
         if (empty($user_roles)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('WRCP: No applicable roles found');
+            }
             return $price_html;
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('WRCP: User roles: ' . implode(', ', $user_roles));
         }
         
         // Handle different product types
@@ -173,30 +201,123 @@ class WRCP_Frontend_Display {
     public function should_modify_pricing() {
         // Skip if user is not logged in
         if (!is_user_logged_in()) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('WRCP: User not logged in');
+            }
             return false;
         }
         
         $current_user_id = get_current_user_id();
         
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('WRCP: Checking pricing for user ID: ' . $current_user_id);
+        }
+        
         // Use WWP compatibility layer to determine if WRCP should run
         if (class_exists('WRCP_WWP_Compatibility')) {
             $compatibility = WRCP_WWP_Compatibility::get_instance();
-            if (!$compatibility->should_wrcp_run()) {
+            $should_run = $compatibility->should_wrcp_run();
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('WRCP: Compatibility should_wrcp_run: ' . ($should_run ? 'true' : 'false'));
+            }
+            
+            if (!$should_run) {
                 return false;
             }
         }
         
         // Skip if user is wholesale customer (WWP compatibility fallback)
-        if ($this->is_wholesale_customer($current_user_id)) {
+        $is_wholesale = $this->is_wholesale_customer($current_user_id);
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('WRCP: is_wholesale_customer: ' . ($is_wholesale ? 'true' : 'false'));
+        }
+        
+        if ($is_wholesale) {
             return false;
         }
         
         // Check if user has any WRCP-enabled roles
         $applicable_roles = $this->get_current_user_applicable_roles();
         
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('WRCP: Applicable roles: ' . implode(', ', $applicable_roles));
+            
+            // Also log all user roles for debugging
+            $user = get_user_by('id', $current_user_id);
+            if ($user) {
+                error_log('WRCP: All user roles: ' . implode(', ', $user->roles));
+                
+                // Check if each role is enabled in WRCP
+                foreach ($user->roles as $role) {
+                    $is_enabled = $this->role_manager->is_role_enabled($role);
+                    error_log('WRCP: Role ' . $role . ' enabled in WRCP: ' . ($is_enabled ? 'yes' : 'no'));
+                }
+            }
+        }
+        
         // Apply compatibility filter
         $should_modify = !empty($applicable_roles);
-        return apply_filters('wrcp_should_modify_pricing', $should_modify, $current_user_id);
+        $result = apply_filters('wrcp_should_modify_pricing', $should_modify, $current_user_id);
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('WRCP: Final should_modify_pricing result: ' . ($result ? 'true' : 'false'));
+        }
+        
+        return $result;
+    }
+    
+    /**
+     * Override WWP pricing for non-wholesale roles (very late hook)
+     *
+     * @param string $price_html Price HTML from WWP
+     * @param WC_Product $product Product object
+     * @return string Modified price HTML
+     */
+    public function override_wwp_pricing($price_html, $product) {
+        // Only run if we should modify pricing and the price contains "Dealer"
+        if (!$this->should_modify_pricing() || strpos($price_html, 'Dealer') === false) {
+            return $price_html;
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('WRCP: Overriding WWP pricing - found "Dealer" in price HTML');
+        }
+        
+        // Get current user's applicable roles
+        $user_roles = $this->get_current_user_applicable_roles();
+        if (empty($user_roles)) {
+            return $price_html;
+        }
+        
+        // Calculate WRCP pricing
+        $original_price = $product->get_price();
+        if (!$original_price) {
+            return $price_html;
+        }
+        
+        $discount_percentage = $this->pricing_engine->calculate_discount($product->get_id(), $user_roles);
+        
+        if ($discount_percentage > 0) {
+            $discounted_price = $this->pricing_engine->apply_discount_to_price($original_price, $discount_percentage);
+            
+            // Create WRCP price HTML
+            $role_name = ucwords(str_replace('_', ' ', $user_roles[0]));
+            $wrcp_price_html = sprintf(
+                '<del>%s</del> <ins>%s</ins><br><small>%s Price</small>',
+                wc_price($original_price),
+                wc_price($discounted_price),
+                esc_html($role_name)
+            );
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('WRCP: Replaced WWP pricing with WRCP pricing for ' . $role_name);
+            }
+            
+            return $wrcp_price_html;
+        }
+        
+        return $price_html;
     }
     
     /**

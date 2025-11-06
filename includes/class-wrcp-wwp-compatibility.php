@@ -344,7 +344,19 @@ class WRCP_WWP_Compatibility {
         if ($this->bootstrap->is_wwp_active()) {
             $wholesale_role = $this->bootstrap->get_user_wwp_wholesale_role($user_id);
             if ($wholesale_role) {
-                return false; // Bypass WRCP for wholesale customers
+                // Only bypass WRCP for actual wholesale roles, not custom roles like "Educator"
+                $true_wholesale_roles = array(
+                    'wholesale_customer',
+                    'wwp_wholesale_customer',
+                    'dealer', // Only if this is truly a wholesale role
+                );
+                
+                // Allow filtering of which roles should bypass WRCP
+                $true_wholesale_roles = apply_filters('wrcp_true_wholesale_roles', $true_wholesale_roles);
+                
+                if (in_array($wholesale_role, $true_wholesale_roles)) {
+                    return false; // Bypass WRCP for true wholesale customers only
+                }
             }
         }
         
@@ -370,10 +382,22 @@ class WRCP_WWP_Compatibility {
             return $discount;
         }
         
-        // If user has wholesale role, don't apply WRCP discount
+        // If user has true wholesale role, don't apply WRCP discount
         $wholesale_role = $this->bootstrap->get_user_wwp_wholesale_role($current_user_id);
         if ($wholesale_role) {
-            return 0; // No WRCP discount for wholesale customers
+            // Only bypass WRCP for actual wholesale roles, not custom roles like "Educator"
+            $true_wholesale_roles = array(
+                'wholesale_customer',
+                'wwp_wholesale_customer',
+                'dealer', // Only if this is truly a wholesale role
+            );
+            
+            // Allow filtering of which roles should bypass WRCP
+            $true_wholesale_roles = apply_filters('wrcp_true_wholesale_roles', $true_wholesale_roles);
+            
+            if (in_array($wholesale_role, $true_wholesale_roles)) {
+                return 0; // No WRCP discount for true wholesale customers only
+            }
         }
         
         return $discount;
@@ -395,9 +419,21 @@ class WRCP_WWP_Compatibility {
         $wholesale_role = $this->bootstrap->get_user_wwp_wholesale_role($current_user_id);
         
         if ($wholesale_role) {
-            // Let WWP handle the pricing for wholesale customers
-            // Remove any WRCP modifications that might have been applied
-            remove_filter('woocommerce_get_price_html', array($this->frontend_display, 'modify_price_html'));
+            // Only let WWP handle pricing for true wholesale customers
+            $true_wholesale_roles = array(
+                'wholesale_customer',
+                'wwp_wholesale_customer',
+                'dealer', // Only if this is truly a wholesale role
+            );
+            
+            // Allow filtering of which roles should bypass WRCP
+            $true_wholesale_roles = apply_filters('wrcp_true_wholesale_roles', $true_wholesale_roles);
+            
+            if (in_array($wholesale_role, $true_wholesale_roles)) {
+                // Let WWP handle the pricing for true wholesale customers
+                // Remove any WRCP modifications that might have been applied
+                remove_filter('woocommerce_get_price_html', array($this->frontend_display, 'modify_price_html'));
+            }
         }
         
         return $price_html;
@@ -646,6 +682,17 @@ class WRCP_WWP_Compatibility {
             echo '</ul>';
             echo '</div>';
         }
+        
+        // Debug notice for development (only show if WP_DEBUG is enabled)
+        if (defined('WP_DEBUG') && WP_DEBUG && is_user_logged_in()) {
+            $debug_info = $this->get_user_debug_info();
+            if (isset($_GET['wrcp_debug']) && $_GET['wrcp_debug'] === '1') {
+                echo '<div class="notice notice-info">';
+                echo '<p><strong>WRCP Debug Info:</strong></p>';
+                echo '<pre>' . esc_html(print_r($debug_info, true)) . '</pre>';
+                echo '</div>';
+            }
+        }
     }
     
     /**
@@ -700,6 +747,12 @@ class WRCP_WWP_Compatibility {
         $this->wwp_priorities = array();
         $this->wrcp_priorities = array();
         
+        // Clear role manager wholesale caches
+        if (class_exists('WRCP_Role_Manager')) {
+            $role_manager = WRCP_Role_Manager::get_instance();
+            $role_manager->clear_wholesale_cache();
+        }
+        
         $this->setup_compatibility();
     }
     
@@ -715,14 +768,88 @@ class WRCP_WWP_Compatibility {
         
         $current_user_id = get_current_user_id();
         
-        // Check if user is wholesale customer
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('WRCP Compatibility: Checking should_wrcp_run for user ' . $current_user_id);
+        }
+        
+        // Check if user is true wholesale customer
         if ($this->bootstrap->is_wwp_active()) {
             $wholesale_role = $this->bootstrap->get_user_wwp_wholesale_role($current_user_id);
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('WRCP Compatibility: WWP detected role: ' . ($wholesale_role ? $wholesale_role : 'none'));
+            }
+            
             if ($wholesale_role) {
-                return false; // Don't run WRCP for wholesale customers
+                // Only bypass WRCP for actual wholesale roles, not custom roles like "Educator"
+                $true_wholesale_roles = array(
+                    'wholesale_customer',
+                    'wwp_wholesale_customer',
+                    'dealer', // Only if this is truly a wholesale role
+                );
+                
+                // Allow filtering of which roles should bypass WRCP
+                $true_wholesale_roles = apply_filters('wrcp_true_wholesale_roles', $true_wholesale_roles);
+                
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('WRCP Compatibility: True wholesale roles: ' . implode(', ', $true_wholesale_roles));
+                    error_log('WRCP Compatibility: Is ' . $wholesale_role . ' in true wholesale roles? ' . (in_array($wholesale_role, $true_wholesale_roles) ? 'yes' : 'no'));
+                }
+                
+                if (in_array($wholesale_role, $true_wholesale_roles)) {
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log('WRCP Compatibility: Bypassing WRCP for true wholesale role: ' . $wholesale_role);
+                    }
+                    return false; // Don't run WRCP for true wholesale customers only
+                }
             }
         }
         
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('WRCP Compatibility: WRCP should run - returning true');
+        }
+        
         return true;
+    }
+    
+    /**
+     * Get debug information about current user's wholesale status
+     *
+     * @return array Debug information
+     */
+    public function get_user_debug_info() {
+        if (!is_user_logged_in()) {
+            return array('error' => 'User not logged in');
+        }
+        
+        $current_user_id = get_current_user_id();
+        $user = get_user_by('id', $current_user_id);
+        
+        $debug_info = array(
+            'user_id' => $current_user_id,
+            'user_roles' => $user ? $user->roles : array(),
+            'wwp_active' => $this->bootstrap->is_wwp_active(),
+            'wwp_detected_role' => false,
+            'is_true_wholesale' => false,
+            'should_wrcp_run' => $this->should_wrcp_run(),
+        );
+        
+        if ($this->bootstrap->is_wwp_active()) {
+            $wholesale_role = $this->bootstrap->get_user_wwp_wholesale_role($current_user_id);
+            $debug_info['wwp_detected_role'] = $wholesale_role;
+            
+            if ($wholesale_role) {
+                $true_wholesale_roles = apply_filters('wrcp_true_wholesale_roles', array(
+                    'wholesale_customer',
+                    'wwp_wholesale_customer',
+                    'dealer',
+                ));
+                
+                $debug_info['true_wholesale_roles'] = $true_wholesale_roles;
+                $debug_info['is_true_wholesale'] = in_array($wholesale_role, $true_wholesale_roles);
+            }
+        }
+        
+        return $debug_info;
     }
 }
