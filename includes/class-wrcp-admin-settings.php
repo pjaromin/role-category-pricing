@@ -148,7 +148,7 @@ class WRCP_Admin_Settings {
             'locale' => get_locale(),
             'strings' => array(
                 'confirm_delete' => __('Are you sure you want to delete this role?', 'woocommerce-role-category-pricing'),
-                'confirm_reset' => __('Are you sure you want to reset all discounts for this category?', 'woocommerce-role-category-pricing'),
+                'confirm_reset' => __('Are you sure you want to clear the selected discounts?', 'woocommerce-role-category-pricing'),
                 'saving' => __('Saving...', 'woocommerce-role-category-pricing'),
                 'saved' => __('Saved!', 'woocommerce-role-category-pricing'),
                 'error' => __('Error occurred while saving.', 'woocommerce-role-category-pricing'),
@@ -514,8 +514,8 @@ class WRCP_Admin_Settings {
             wp_send_json_error(__('Invalid role specified.', 'woocommerce-role-category-pricing'));
         }
         
-        // Validate discount
-        if (!is_numeric($discount_input)) {
+        // Validate discount - allow empty for clearing
+        if (!empty($discount_input) && !is_numeric($discount_input)) {
             wp_send_json_error(__('Discount must be a valid number.', 'woocommerce-role-category-pricing'));
         }
         

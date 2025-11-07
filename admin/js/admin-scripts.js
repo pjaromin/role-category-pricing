@@ -271,23 +271,38 @@
                 return $(this).val();
             }).get();
             
+            // Debug logging
+            console.log('Bulk discount operation:', {
+                isClear: isClear,
+                role: role,
+                discount: discount,
+                selectedCategories: selectedCategories
+            });
+            
             // Validation
             if (!role) {
-                this.showAlert('Please select a role.', 'error');
+                this.showAlert(wrcp_admin.strings.please_select_role || 'Please select a role.', 'error');
                 return;
             }
             
-            if (!isClear && (!discount || discount < 0 || discount > 100)) {
-                this.showAlert(wrcp_admin.strings.invalid_discount, 'error');
-                return;
+            if (!isClear) {
+                if (!discount || discount === '' || isNaN(parseFloat(discount))) {
+                    this.showAlert(wrcp_admin.strings.invalid_discount || 'Please enter a valid discount.', 'error');
+                    return;
+                }
+                var discountValue = parseFloat(discount);
+                if (discountValue < 0 || discountValue > 100) {
+                    this.showAlert(wrcp_admin.strings.invalid_discount || 'Discount must be between 0 and 100.', 'error');
+                    return;
+                }
             }
             
             if (selectedCategories.length === 0) {
-                this.showAlert('Please select at least one category.', 'error');
+                this.showAlert(wrcp_admin.strings.please_select_categories || 'Please select at least one category.', 'error');
                 return;
             }
             
-            if (isClear && !confirm(wrcp_admin.strings.confirm_reset)) {
+            if (isClear && !confirm(wrcp_admin.strings.confirm_reset || 'Are you sure you want to clear the selected discounts?')) {
                 return;
             }
             
@@ -305,6 +320,7 @@
                     nonce: wrcp_admin.nonce
                 },
                 success: function(response) {
+                    console.log('AJAX response:', response);
                     if (response.success) {
                         // Update the input fields
                         selectedCategories.forEach(function(categoryId) {
@@ -321,11 +337,12 @@
                         
                         this.showAlert(response.data.message, 'success');
                     } else {
-                        this.showAlert(response.data.message || wrcp_admin.strings.error, 'error');
+                        this.showAlert(response.data.message || wrcp_admin.strings.error || 'An error occurred.', 'error');
                     }
                 }.bind(this),
-                error: function() {
-                    this.showAlert(wrcp_admin.strings.error, 'error');
+                error: function(xhr, status, error) {
+                    console.error('AJAX error:', xhr, status, error);
+                    this.showAlert(wrcp_admin.strings.error || 'An error occurred.', 'error');
                 }.bind(this),
                 complete: function() {
                     this.setButtonLoading($button, false, originalText);
@@ -337,7 +354,7 @@
          * Handle reset all discounts
          */
         handleResetAllDiscounts: function() {
-            if (!confirm('Are you sure you want to reset all category discounts? This cannot be undone.')) {
+            if (!confirm(wrcp_admin.strings.confirm_reset_all)) {
                 return;
             }
             

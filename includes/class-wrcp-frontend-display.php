@@ -265,12 +265,14 @@ class WRCP_Frontend_Display {
             $discounted_price = $this->pricing_engine->apply_discount_to_price($original_price, $discount_percentage);
             
             // Create WRCP price HTML
-            $role_name = ucwords(str_replace('_', ' ', $user_roles[0]));
+            $role_display = $this->format_role_display_name($user_roles[0]);
+            $savings_percentage = (($original_price - $discounted_price) / $original_price) * 100;
             $wrcp_price_html = sprintf(
-                '<del>%s</del> <ins>%s</ins><br><small>%s Price</small>',
+                '<del>%s</del><br><span style="color: red; font-weight: bold;">%s Price: %s (%.0f%% OFF)</span>',
                 wc_price($original_price),
+                esc_html($role_display),
                 wc_price($discounted_price),
-                esc_html($role_name)
+                $savings_percentage
             );
             
             return $wrcp_price_html;
@@ -395,31 +397,17 @@ class WRCP_Frontend_Display {
             return '';
         }
         
-        $original_formatted = wc_price($original_price);
-        $discounted_formatted = wc_price($discounted_price);
         $role_display = $this->format_role_display_name($role_name);
         
-        // Calculate savings for additional context
-        $savings_amount = $original_price - $discounted_price;
-        $savings_percentage = ($savings_amount / $original_price) * 100;
+        // Calculate savings percentage
+        $savings_percentage = (($original_price - $discounted_price) / $original_price) * 100;
         
         return sprintf(
-            '<span class="wrcp-price-container" data-role="%s" data-savings="%.2f">
-                <del class="wrcp-original-price" aria-label="%s">%s</del> 
-                <ins class="wrcp-discounted-price" aria-label="%s">%s</ins>
-                <br><small class="wrcp-role-label">%s Price</small>
-                <small class="wrcp-savings-info" title="You save %s (%.1f%%)">Save %s</small>
-            </span>',
-            esc_attr($role_name),
-            $savings_percentage,
-            esc_attr__('Regular price', 'woocommerce-role-category-pricing'),
-            $original_formatted,
-            esc_attr(sprintf(__('%s price', 'woocommerce-role-category-pricing'), $role_display)),
-            $discounted_formatted,
-            $role_display,
-            wc_price($savings_amount),
-            $savings_percentage,
-            wc_price($savings_amount)
+            '<del>%s</del><br><span style="color: red; font-weight: bold;">%s Price: %s (%.0f%% OFF)</span>',
+            wc_price($original_price),
+            esc_html($role_display),
+            wc_price($discounted_price),
+            $savings_percentage
         );
     }
     
@@ -447,47 +435,31 @@ class WRCP_Frontend_Display {
         
         $role_display = $this->format_role_display_name($role_name);
         
-        // Format original price range
-        if ($original_min === $original_max) {
-            $original_range = wc_price($original_min);
-            $original_label = esc_attr__('Regular price', 'woocommerce-role-category-pricing');
-        } else {
-            $original_range = wc_format_price_range($original_min, $original_max);
-            $original_label = esc_attr__('Regular price range', 'woocommerce-role-category-pricing');
-        }
-        
         // Format discounted price range
         if ($discounted_min === $discounted_max) {
             $discounted_range = wc_price($discounted_min);
-            $discounted_label = esc_attr(sprintf(__('%s price', 'woocommerce-role-category-pricing'), $role_display));
         } else {
             $discounted_range = wc_format_price_range($discounted_min, $discounted_max);
-            $discounted_label = esc_attr(sprintf(__('%s price range', 'woocommerce-role-category-pricing'), $role_display));
         }
         
-        // Calculate average savings for display
+        // Calculate average savings percentage
         $avg_original = ($original_min + $original_max) / 2;
         $avg_discounted = ($discounted_min + $discounted_max) / 2;
-        $avg_savings = $avg_original - $avg_discounted;
-        $avg_savings_percentage = ($avg_savings / $avg_original) * 100;
+        $avg_savings_percentage = (($avg_original - $avg_discounted) / $avg_original) * 100;
+        
+        // Format original price range
+        if ($original_min === $original_max) {
+            $original_range = wc_price($original_min);
+        } else {
+            $original_range = wc_format_price_range($original_min, $original_max);
+        }
         
         return sprintf(
-            '<span class="wrcp-price-container wrcp-variable-price" data-role="%s" data-avg-savings="%.2f">
-                <del class="wrcp-original-price" aria-label="%s">%s</del> 
-                <ins class="wrcp-discounted-price" aria-label="%s">%s</ins>
-                <br><small class="wrcp-role-label">%s Price</small>
-                <small class="wrcp-savings-info" title="Average savings: %s (%.1f%%)">Up to %s off</small>
-            </span>',
-            esc_attr($role_name),
-            $avg_savings_percentage,
-            $original_label,
+            '<del>%s</del><br><span style="color: red; font-weight: bold;">%s Price: %s (%.0f%% OFF)</span>',
             $original_range,
-            $discounted_label,
+            esc_html($role_display),
             $discounted_range,
-            $role_display,
-            wc_price($avg_savings),
-            $avg_savings_percentage,
-            wc_price($original_max - $discounted_min)
+            $avg_savings_percentage
         );
     }
     
